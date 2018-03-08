@@ -1,6 +1,6 @@
 import tensorflow as tf
 import datetime
-from text_cnn import TextCNN
+from pcnn import PCNN
 import data_helpers
 import numpy as np
 import time
@@ -95,7 +95,7 @@ def train(x_text, dist1, dist2, y):
             log_device_placement=FLAGS.log_device_placement)
         sess = tf.Session(config=session_conf)
         with sess.as_default():
-            cnn = TextCNN(
+            cnn = PCNN(
                 sequence_length=x_train.shape[2],
                 num_classes=y_train.shape[1],
                 text_vocab_size=len(text_vocab_processor.vocabulary_),

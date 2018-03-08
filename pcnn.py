@@ -1,7 +1,7 @@
 import tensorflow as tf
 
 
-class TextCNN:
+class PCNN:
     def __init__(self, sequence_length, num_classes,
                  text_vocab_size, text_embedding_size, dist_vocab_size, dist_embedding_size,
                  filter_sizes, num_filters, l2_reg_lambda=0.0):
@@ -47,23 +47,24 @@ class TextCNN:
                 conv = tf.nn.conv2d(self.embedded_chars_expanded, W, strides=[1, 1, 1, 1], padding="VALID", name="conv")
                 # Apply nonlinearity
                 h = tf.nn.relu(tf.nn.bias_add(conv, b), name="relu")
-                print(h)
-                print(tf.slice(h, [0, 0, 0, 0], [-1, 5, -1, -1]))
-                print(tf.slice(h, [0, 5, 0, 0], [-1, 5, -1, -1]))
-                print(tf.slice(h, [0, 10, 0, 0], [-1, -1, -1, -1]))
 
                 # Maxpooling over the outputs
-                pooled_1 = tf.nn.max_pool(h, ksize=[1, sequence_length - filter_size + 1, 1, 1], strides=[1, 1, 1, 1], padding='VALID', name="pool")
-                print(pooled_1)
-                pooled_outputs.append(pooled_1)
-
-                pooled_2 = tf.nn.max_pool(h, ksize=[1, sequence_length - filter_size + 1, 1, 1], strides=[1, 1, 1, 1],
-                                        padding='VALID', name="pool")
-                pooled_outputs.append(pooled_2)
-
-                pooled_3 = tf.nn.max_pool(h, ksize=[1, sequence_length - filter_size + 1, 1, 1], strides=[1, 1, 1, 1],
-                                        padding='VALID', name="pool")
-                pooled_outputs.append(pooled_3)
+                for j in range(64):
+                    h_left = tf.expand_dims(tf.slice(h[j], [0, 0, 0], [10, -1, -1]), 0)
+                    h_mid = tf.expand_dims(tf.slice(h[j], [10, 0, 0], [15, -1, -1]), 0)
+                    h_right = tf.expand_dims(tf.slice(h[j], [10+15, 0, 0], [-1, -1, -1]), 0)
+                    pooled_outputs.append(
+                        tf.nn.max_pool(h_left, ksize=[1, 10, 1, 1], strides=[1, 1, 1, 1],
+                                       padding='VALID', name="pool")
+                    )
+                    pooled_outputs.append(
+                        tf.nn.max_pool(h_mid, ksize=[1, 15, 1, 1], strides=[1, 1, 1, 1],
+                                       padding='VALID', name="pool")
+                    )
+                    pooled_outputs.append(
+                        tf.nn.max_pool(h_right, ksize=[1, sequence_length - filter_size + 1 - (10+15), 1, 1], strides=[1, 1, 1, 1],
+                                       padding='VALID', name="pool")
+                    )
 
         # Combine all the pooled features
         num_filters_total = num_filters * len(filter_sizes) * 3
