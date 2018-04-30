@@ -26,6 +26,17 @@ class TextRCNN:
                                                                                        inputs=self.embedded_chars,
                                                                                        sequence_length=text_length,
                                                                                        dtype=tf.float32)
+        with tf.name_scope("left-context"):
+            tp_fw = tf.transpose(tf.transpose(self.output_fw, [1, 0, 2])[:-1], [1, 0, 2])
+            self.c_left = tf.concat([tf.zeros([64, 1, 128]), tp_fw], axis=1)
+        with tf.name_scope("right-context"):
+            tp_bw = tf.transpose(tf.transpose(self.output_fw, [1, 0, 2])[1:], [1, 0, 2])
+            self.c_right = tf.concat([tp_bw, tf.zeros([64, 1, 128])], axis=1)
+
+        with tf.name_scope("word-representation"):
+            self.x = tf.concat([self.c_left, self.embedded_chars, self.c_right], axis=2)
+
+
 
 
     @staticmethod
