@@ -3,7 +3,7 @@ import tensorflow as tf
 
 class TextRCNN:
     def __init__(self, sequence_length, num_classes, vocab_size, embedding_size,
-                 cell_type, hidden_size, l2_reg_lambda=0.0):
+                 cell_type, state_size, hidden_size, l2_reg_lambda=0.0):
         # Placeholders for input, output and dropout
         self.input_text = tf.placeholder(tf.int32, shape=[None, sequence_length], name='input_text')
         self.input_y = tf.placeholder(tf.float32, shape=[None, num_classes], name='input_y')
@@ -19,25 +19,47 @@ class TextRCNN:
 
         # Bidirectional(Left&Right) Recurrent Structure
         with tf.name_scope("bi-rnn"):
-            fw_cell = self._get_cell(hidden_size, cell_type)
-            bw_cell = self._get_cell(hidden_size, cell_type)
+            fw_cell = self._get_cell(state_size, cell_type)
+            bw_cell = self._get_cell(state_size, cell_type)
             (self.output_fw, self.output_bw), states = tf.nn.bidirectional_dynamic_rnn(cell_fw=fw_cell,
                                                                                        cell_bw=bw_cell,
                                                                                        inputs=self.embedded_chars,
                                                                                        sequence_length=text_length,
                                                                                        dtype=tf.float32)
-        with tf.name_scope("left-context"):
-            tp_fw = tf.transpose(tf.transpose(self.output_fw, [1, 0, 2])[:-1], [1, 0, 2])
-            self.c_left = tf.concat([tf.zeros([64, 1, 128]), tp_fw], axis=1)
-        with tf.name_scope("right-context"):
-            tp_bw = tf.transpose(tf.transpose(self.output_fw, [1, 0, 2])[1:], [1, 0, 2])
-            self.c_right = tf.concat([tp_bw, tf.zeros([64, 1, 128])], axis=1)
+
+        with tf.name_scope("context"):
+            shape = [tf.shape(self.output_fw)[0], 1, tf.shape(self.output_fw)[2]]
+            self.c_left = tf.concat([tf.zeros(shape), self.output_fw[:, :-1]], axis=1)
+            self.c_right = tf.concat([self.output_bw[:, 1:], tf.zeros(shape)], axis=1)
 
         with tf.name_scope("word-representation"):
             self.x = tf.concat([self.c_left, self.embedded_chars, self.c_right], axis=2)
 
+        with tf.name_scope("text-representation"):
+            W2 = tf.Variable(tf.random_uniform([2*state_size + embedding_size, hidden_size], -1.0, 1.0), name="W2")
+            b2 = tf.Variable(tf.constant(0.1, shape=[hidden_size]), name="b2")
+            self.y2 = tf.einsum('aij,jk->aik', self.x, W2) + b2
 
+        with tf.name_scope("max-pooling"):
+            self.y3 = tf.reduce_max(self.y2, axis=1)  # shape:[None,embed_size*3]
 
+        with tf.name_scope("output"):
+            W4 = tf.get_variable("W4", shape=[hidden_size, num_classes], initializer=tf.contrib.layers.xavier_initializer())
+            b4 = tf.Variable(tf.constant(0.1, shape=[num_classes]), name="b4")
+            l2_loss += tf.nn.l2_loss(W4)
+            l2_loss += tf.nn.l2_loss(b4)
+            self.logits = tf.nn.xw_plus_b(self.y3, W4, b4, name="logits")
+            self.predictions = tf.argmax(self.logits, 1, name="predictions")
+
+        # Calculate mean cross-entropy loss
+        with tf.name_scope("loss"):
+            losses = tf.nn.softmax_cross_entropy_with_logits(logits=self.logits, labels=self.input_y)
+            self.loss = tf.reduce_mean(losses) + l2_reg_lambda * l2_loss
+
+        # Accuracy
+        with tf.name_scope("accuracy"):
+            correct_predictions = tf.equal(self.predictions, tf.argmax(self.input_y, axis=1))
+            self.accuracy = tf.reduce_mean(tf.cast(correct_predictions, tf.float32), name="accuracy")
 
     @staticmethod
     def _get_cell(hidden_size, cell_type):
