@@ -12,6 +12,14 @@ Tensorflow implementation of "[Recurrent Convolutional Neural Network for Text C
 * *rt-polarity.neg* contains 5331 negative snippets.
 
 
+## Implementation of Recurrent Structure
+
+![recurrent_structure](https://user-images.githubusercontent.com/15166794/39777565-db89ca68-533e-11e8-8a87-785f98b3cfef.PNG)
+
+* Bidirectional RNN (Bi-RNN) is used to implement the left and right context vectors.
+* Each context vector is created by shifting the output of Bi-RNN and concatenating a zero state indicating the start of the context.
+
+
 ## Usage
 ### Train
 * positive data is located in *<U>"data/rt-polaritydata/rt-polarity.pos"*</U>.
