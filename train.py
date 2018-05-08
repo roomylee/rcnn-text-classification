@@ -22,7 +22,7 @@ tf.flags.DEFINE_integer("word_embedding_dim", 300, "Dimensionality of word embed
 tf.flags.DEFINE_integer("context_embedding_dim", 512, "Dimensionality of context embedding(= RNN state size)  (Default: 512)")
 tf.flags.DEFINE_integer("hidden_size", 512, "Size of hidden layer (Default: 512)")
 tf.flags.DEFINE_float("dropout_keep_prob", 0.7, "Dropout keep probability (Default: 0.7)")
-tf.flags.DEFINE_float("l2_reg_lambda", 1.0, "L2 regularization lambda (Default: 1.0)")
+tf.flags.DEFINE_float("l2_reg_lambda", 0.5, "L2 regularization lambda (Default: 0.5)")
 
 # Training parameters
 tf.flags.DEFINE_integer("batch_size", 64, "Batch Size (Default: 64)")
