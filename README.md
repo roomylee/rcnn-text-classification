@@ -1,4 +1,4 @@
-# Recurrent Convolutional Neural Network for Text Calssification
+# Recurrent Convolutional Neural Network for Text Classification
 Tensorflow implementation of "[Recurrent Convolutional Neural Network for Text Classification](https://www.aaai.org/ocs/index.php/AAAI/AAAI15/paper/view/9745)".
 
 ![rcnn](https://user-images.githubusercontent.com/15166794/39769535-703d02c8-5327-11e8-99d8-44a060e63e48.PNG)
