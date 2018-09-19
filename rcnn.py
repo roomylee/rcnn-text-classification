@@ -41,7 +41,7 @@ class TextRCNN:
         with tf.name_scope("text-representation"):
             W2 = tf.Variable(tf.random_uniform([embedding_size, hidden_size], -1.0, 1.0), name="W2")
             b2 = tf.Variable(tf.constant(0.1, shape=[hidden_size]), name="b2")
-            self.y2 = tf.einsum('aij,jk->aik', self.x, W2) + b2
+            self.y2 = tf.tanh(tf.einsum('aij,jk->aik', self.x, W2) + b2)
 
         with tf.name_scope("max-pooling"):
             self.y3 = tf.reduce_max(self.y2, axis=1)
